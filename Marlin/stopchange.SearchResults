@@ -1,0 +1,3 @@
+---- counter_y Matches (2 in 1 files) ----
+Stepper.cpp:static long counter_x, counter_y, counter_z, counter_e;
+Stepper.cpp:      counter_y = counter_z = counter_e = counter_x;

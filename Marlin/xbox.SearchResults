@@ -1,0 +1,58 @@
+---- kill Matches (14 in 7 files) ----
+Cardreader.cpp:200
+       kill();
+       return;
+     }
+Language.h:149
+#define MSG_ERR_KILLED                      "Printer halted. kill() called!"
+#define MSG_ERR_STOPPED                     "Printer stopped due to errors. Fix the error and use M999 to restart. (Temperature is reset. Set it after restarting)"
+#define MSG_RESEND                          "Resend: "
+Language.h (configurator\config):149
+#define MSG_ERR_KILLED                      "Printer halted. kill() called!"
+#define MSG_ERR_STOPPED                     "Printer stopped due to errors. Fix the error and use M999 to restart. (Temperature is reset. Set it after restarting)"
+#define MSG_RESEND                          "Resend: "
+Marlin.h:219
+void kill();
+void Stop();
+
+Marlin_main.cpp:581
+ *  - Set up the kill pin, filament runout, power hold
+ *  - Start the serial port
+ *  - Print startup messages and diagnostics
+Marlin_main.cpp:872
+      if (strcmp(command, "M112") == 0) kill();
+
+      cmd_queue_index_w = (cmd_queue_index_w + 1) % BUFSIZE;
+Marlin_main.cpp:3439
+inline void gcode_M112() { kill(); }
+
+#ifdef BARICUDA
+Marlin_main.cpp:6186
+  if (max_inactive_time && ms > previous_cmd_ms + max_inactive_time) kill();
+
+  if (stepper_inactive_time && ms > previous_cmd_ms + stepper_inactive_time
+Marlin_main.cpp:6201
+    // Check if the kill button was pressed and wait just in case it was an accidental
+    // key kill key press
+    // -------------------------------------------------------------------------------
+    static int killCount = 0;   // make the inactivity button a bit less responsive
+Marlin_main.cpp:6214
+    if (killCount >= KILL_DELAY) kill();
+  #endif
+
+Marlin_main.cpp:6315
+void kill()
+{
+  cli(); // Stop interrupts
+Temperature.cpp:729
+      kill();
+      return 0.0;
+    } 
+Watchdog.cpp:46
+    //TODO: This message gets overwritten by the kill() call
+    LCD_ALERTMESSAGEPGM("ERR:Please Reset");//16 characters so it fits on a 16x2 display
+    lcd_update();
+Watchdog.cpp:51
+    kill(); //kill blocks
+    while(1); //wait for user or serial reset
+}
