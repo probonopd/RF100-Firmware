@@ -1,4 +1,4 @@
-# Conrad Electronic RF100 Firmware
+# Conrad Electronic Renkforce RF100 Firmware
 
 Conrad Electronic Renkforce RF100 Firmware
 
