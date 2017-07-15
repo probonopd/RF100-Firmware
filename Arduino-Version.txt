@@ -1,0 +1,8 @@
+### DOWNLOAD ARDUINO IDE ###
+
+https://www.arduino.cc/en/Main/OldSoftwareReleases#previous
+
+Please use Arduino IDE 1.6.0 higher version doesn't work!
+
+
+
