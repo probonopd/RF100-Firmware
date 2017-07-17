@@ -14,9 +14,7 @@ before_install:
   - find arduino-*/ -name platform.local.txt -delete
 
 script:
-
   - arduino-*/arduino --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f Marlin/Marlin.ino)
-  - # --pref build.path=. 
-  - # ls -lh
-  - # zip -r prusa3d_fw_$(git rev-parse --short HEAD).zip prusa3d_fw_* *.pdf
-  - # curl --upload-file prusa3d_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/prusa3d_fw_$(git rev-parse --short HEAD).zip
+  - find /tmp -name Marlin.cpp.hex -exec cp {} . \;
+  - zip -r rf100_fw_$(git rev-parse --short HEAD).zip Marlin.cpp.hex *.pdf
+  - curl --upload-file rf100_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/rf100_fw_$(git rev-parse --short HEAD).zip
