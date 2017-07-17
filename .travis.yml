@@ -15,7 +15,7 @@ before_install:
 
 script:
 
-  - arduino-*/arduino --pref build.path=. --verify --verbose-build --board marlin:avr:rambo $PWD/Marlin/Marlin.ino
+  - arduino-*/arduino --pref build.path=. --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $PWD/Marlin/Marlin.ino
   - ls -lh
   - # zip -r prusa3d_fw_$(git rev-parse --short HEAD).zip prusa3d_fw_* *.pdf
   - # curl --upload-file prusa3d_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/prusa3d_fw_$(git rev-parse --short HEAD).zip
