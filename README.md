@@ -1,6 +1,6 @@
-# Conrad Electronic Renkforce RF100 Firmware
+# Conrad Electronic Renkforce RF100 Firmware [![Build Status](https://travis-ci.org/probonopd/RF100-Firmware.svg?branch=master)](https://travis-ci.org/probonopd/RF100-Firmware)
 
-Conrad Electronic Renkforce RF100 Firmware [![Build Status](https://travis-ci.org/probonopd/RF100-Firmware.svg?branch=master)](https://travis-ci.org/probonopd/RF100-Firmware)
+Conrad Electronic Renkforce RF100 Firmware
 
 Imported from [001507428-up-01-en-SOURCE_CODE_RENKFORCE_RF100_3D_DRUCKER.zip](http://www.produktinfo.conrad.com/datenblaetter/1500000-1599999/001507428-up-01-en-SOURCE_CODE_RENKFORCE_RF100_3D_DRUCKER.zip)
 
