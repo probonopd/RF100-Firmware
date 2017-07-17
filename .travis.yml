@@ -1,0 +1,21 @@
+# Compile Firmware on Travis CI
+# By Simon Peter
+# Roughly based on https://github.com/prusa3d/Prusa-Firmware/issues/29 and
+# https://learn.adafruit.com/continuous-integration-arduino-and-you/testing-your-project
+
+language: c
+
+before_install:
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
+  - sleep 3
+  - export DISPLAY=:1.0
+  - wget http://downloads.arduino.cc/arduino-1.6.0-linux64.tar.xz
+  - tar xf arduino-1.6.8-linux64.tar.xz
+  - find arduino-1.6.8/ -name platform.local.txt -delete
+
+script:
+
+  - arduino-1.6.0/arduino --pref build.path=. --verify --verbose-build --board marlin:avr:rambo $PWD/Marlin/Marlin.ino
+  - ls -lh
+  - # zip -r prusa3d_fw_$(git rev-parse --short HEAD).zip prusa3d_fw_* *.pdf
+  - # curl --upload-file prusa3d_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/prusa3d_fw_$(git rev-parse --short HEAD).zip
