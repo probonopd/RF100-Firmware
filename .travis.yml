@@ -10,12 +10,12 @@ before_install:
   - sleep 3
   - export DISPLAY=:1.0
   - wget http://downloads.arduino.cc/arduino-1.6.0-linux64.tar.xz
-  - tar xf arduino-1.6.8-linux64.tar.xz
-  - find arduino-1.6.8/ -name platform.local.txt -delete
+  - tar xf arduino-*-linux64.tar.xz
+  - find arduino-*/ -name platform.local.txt -delete
 
 script:
 
-  - arduino-1.6.0/arduino --pref build.path=. --verify --verbose-build --board marlin:avr:rambo $PWD/Marlin/Marlin.ino
+  - arduino-*/arduino --pref build.path=. --verify --verbose-build --board marlin:avr:rambo $PWD/Marlin/Marlin.ino
   - ls -lh
   - # zip -r prusa3d_fw_$(git rev-parse --short HEAD).zip prusa3d_fw_* *.pdf
   - # curl --upload-file prusa3d_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/prusa3d_fw_$(git rev-parse --short HEAD).zip
