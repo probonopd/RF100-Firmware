@@ -16,5 +16,13 @@ before_install:
 script:
   - arduino-*/arduino --pref build.path=. --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f RF-100/RF-100.ino)
   - ls .
-  - zip -r rf100_fw_$(git rev-parse --short HEAD).zip *.hex *.pdf
-  - curl --upload-file rf100_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/rf100_fw_$(git rev-parse --short HEAD).zip
+  - zip -r rf100_fw_$(git rev-parse --short HEAD).zip *.ino.hex *.pdf
+
+after_success:
+  - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+  - bash ./upload.sh rf100_fw_*.zip
+  
+branches:
+  except:
+    - # Do not build tags that we create when we upload to GitHub Releases
+    - /^(?i:continuous)$/
