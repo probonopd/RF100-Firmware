@@ -9,12 +9,12 @@ before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
   - export DISPLAY=:1.0
-  - wget http://downloads.arduino.cc/arduino-1.6.0-linux64.tar.xz
+  - wget http://downloads.arduino.cc/arduino-1.8.3-linux64.tar.xz
   - tar xf arduino-*-linux64.tar.xz
   - find arduino-*/ -name platform.local.txt -delete
 
 script:
-  - arduino-*/arduino --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f Marlin/Marlin.ino)
-  - find /tmp -name Marlin.cpp.hex -exec cp {} . \;
-  - zip -r rf100_fw_$(git rev-parse --short HEAD).zip Marlin.cpp.hex *.pdf
+  - arduino-*/arduino --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f RF-100/RF-100.ino)
+  - find /tmp -name RF-100.cpp.hex -exec cp {} . \;
+  - zip -r rf100_fw_$(git rev-parse --short HEAD).zip RF-100.cpp.hex *.pdf
   - curl --upload-file rf100_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/rf100_fw_$(git rev-parse --short HEAD).zip
