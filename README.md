@@ -1,4 +1,4 @@
-# Conrad Electronic Renkforce RF100  Community Firmware [![Build Status](https://travis-ci.org/probonopd/RF100-Firmware.svg?branch=community)](https://travis-ci.org/probonopd/RF100-Firmware)
+# Renkforce RF100 Community Firmware [![Build Status](https://travis-ci.org/probonopd/RF100-Firmware.svg?branch=community)](https://travis-ci.org/probonopd/RF100-Firmware)
 
 Community-based Marlin firmware configured for the Conrad Electronic Renkforce RF100
 
