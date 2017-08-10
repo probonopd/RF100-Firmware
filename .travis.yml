@@ -15,8 +15,8 @@ before_install:
 
 script:
   - arduino-*/arduino --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f RF-100/RF-100.ino)
-  - find /tmp -name 'RF-100*'
-  - find /tmp -name RF-100.ino.hex -exec cp {} . \;
+  - find '/tmp/arduino_build_*'
+  - find /tmp -name '*.hex' -exec cp {} . \;
   - ls .
   - zip -r rf100_fw_$(git rev-parse --short HEAD).zip RF-100.ino.hex *.pdf
   - curl --upload-file rf100_fw_$(git rev-parse --short HEAD).zip https://transfer.sh/rf100_fw_$(git rev-parse --short HEAD).zip
