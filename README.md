@@ -13,6 +13,7 @@ This is a recent version or Marlin 1.1.3 configured by the community for the RF1
 - The direction ef the knob is corrected. Turning it clockwise scrolls down in the menu
 - The sensitivity of the knob is improved
 - You can now use the knob for bed-levelling rather than just the screws (I use the screws anyway)
+- The printable area is significantly increased. __CAUTION:__ You need to increaase the print bed, e.g., by clipping the glass from a 13x18 cm picture frame to the build plate. Be sure to lower the print bed entirely and then level the bed again.
 
 ## How do I use this?
 
