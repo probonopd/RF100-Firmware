@@ -34,7 +34,6 @@ script:
   - sed -i -e 's|^Icon=.*|Icon=cura|g' Cura.AppDir/cura.desktop 
   - wget -c https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
   - chmod a+x appimagetool-x86_64.AppImage 
-  - ./appimagetool-x86_64.AppImage ./Cura.AppDir/
   - cp Cura.AppDir/.DirIcon Cura.AppDir/cura.png
   - sed -i -e 's|^Name=.*|Name=Cura for Renkforce RF100|g' Cura.AppDir/cura.desktop 
   - ./appimagetool-x86_64.AppImage ./Cura.AppDir/
