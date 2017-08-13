@@ -17,10 +17,31 @@ script:
   - arduino-*/arduino --pref build.path=. --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f RF-100/RF-100.ino)
   - ls .
   - zip -r rf100_fw_$(git rev-parse --short HEAD).zip *.ino.hex *.pdf
+  - # Create custom Cura AppImage with our printer definition preinstalled
+  - export VERSION=2.7.0-BETA
+  - wget -c "http://software.ultimaker.com/Cura_open_beta/Cura-$VERSION.AppImage"
+  - sudo mount Cura-$VERSION.AppImage /mnt -o loop,ro
+  - sudo cp -r /mnt Cura.AppDir
+  - sudo chown -R $USER Cura.AppDir/
+  - mv Cura.AppDir/usr/bin/resources/definitions/fdm* .
+  - rm Cura.AppDir/usr/bin/resources/definitions/*
+  - mv fdm* Cura.AppDir/usr/bin/resources/definitions/
+  - wget https://github.com/probonopd/RF100-Firmware/raw/community/cura/renkforce_rf100xl.def.json
+  - mv renkforce_rf100xl.def.json Cura.AppDir/usr/bin/resources/definitions/
+  - file Cura.AppDir/.DirIcon 
+  - mkdir -p Cura.AppDir/usr/share/icons/hicolor/128x128/apps
+  - cp Cura.AppDir/.DirIcon Cura.AppDir/usr/share/icons/hicolor/128x128/apps/cura.png
+  - sed -i -e 's|^Icon=.*|Icon=cura|g' Cura.AppDir/cura.desktop 
+  - wget -c https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+  - chmod a+x appimagetool-x86_64.AppImage 
+  - ./appimagetool-x86_64.AppImage ./Cura.AppDir/
+  - cp Cura.AppDir/.DirIcon Cura.AppDir/cura.png
+  - sed -i -e 's|^Name=.*|Name=Cura for Renkforce RF100|g' Cura.AppDir/cura.desktop 
+  - ./appimagetool-x86_64.AppImage ./Cura.AppDir/
 
 after_success:
   - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-  - bash ./upload.sh rf100_fw_*.zip
+  - bash ./upload.sh rf100_fw_*.zip Cura_for_Renkforce_RF100*.AppImage
   
 branches:
   except:
