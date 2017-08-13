@@ -32,3 +32,21 @@ sudo avrdude -v -c stk500v2 -p m2560 -P /dev/ttyUSB0 -b 115200 -U flash:r:rf100_
 ```
 
 Conrad Electronic also provides a compiled firmware on their product page.
+
+## Hardware information
+
+### Mainboard
+
+HICTOP 3D Printer Control Board MPX.3, similar to an Arduino Mega with an integrated RAMPS 1.4, https://github.com/MarlinFirmware/Marlin/issues/2906
+
+## Hardware upgrades
+
+### Functional upgrades
+
+* The standard print bed does not make full use of the available build space, there is at least 3 cm more available in the Y dimension. This makes quite a big difference! As a temporary solution, you can clip on a larger piece of glass with paper clips.
+* Automatic bed leveling. Possibly a sensor like the LJC18A3 might work (to be investigated).
+
+### Hardware bugfixes
+
+* Make the fan double as a part cooling fan. Different solutions are available on Thingiverse.
+* Clip to prevent the ribbon cable that goes to the extruder from breaking. [Available on Thingiverse](https://www.thingiverse.com/thing:2455984). Highly recommended to be installed as the first thing on this printer, since the cable has a tendency to break. Apparently newer versions of the machines no longer use a flat ribbon cable.
