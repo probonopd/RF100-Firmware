@@ -20,7 +20,7 @@ This is a recent version or Marlin 1.1.3 configured by the community for the RF1
 Upload the firmware using __Cura__ or using the __Arduino IDE__ (selecting "Arduino/Genuino Mega or Mega 2560, ATmega2560 (Mega 2560) on /dev/ttyX" lets you upload the sketch also from the Arduino IDE. Programmer: "AVRISP mkII" - the default one), or using __avrdude__ like this:
 
 ```
-sudo avrdude -v -c stk500v2 -p m2560 -P /dev/ttyUSB0 -b 115200 -U flash:w:RF100\ V1.1.cpp.hex:i -D
+sudo avrdude -v -c stk500v2 -p m2560 -P /dev/ttyUSB0 -b 115200 -U flash:w:RF-100.ino.hex:i -D
 ```
 
 ## What if I would like to go back to the official Conrad firmware?
