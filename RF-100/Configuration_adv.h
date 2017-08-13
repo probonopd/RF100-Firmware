@@ -624,7 +624,7 @@
  * K=0 means advance disabled.
  * See Marlin documentation for calibration instructions.
  */
-//#define LIN_ADVANCE
+#define LIN_ADVANCE // Experimental; disable if it causes issues
 
 #if ENABLED(LIN_ADVANCE)
   #define LIN_ADVANCE_K 75
