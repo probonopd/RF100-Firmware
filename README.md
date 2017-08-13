@@ -49,5 +49,5 @@ HICTOP 3D Printer Control Board MPX.3, similar to an Arduino Mega with an integr
 
 ### Hardware bugfixes
 
-* Make the fan double as a part cooling fan. Different solutions are available on Thingiverse.
+* Make the fan double as a part cooling fan. Different solutions are available on Thingiverse. Possibly design something using a blower fan (like https://www.thingiverse.com/thing:1652852/)?
 * Clip to prevent the ribbon cable that goes to the extruder from breaking. [Available on Thingiverse](https://www.thingiverse.com/thing:2455984). Highly recommended to be installed as the first thing on this printer, since the cable has a tendency to break. Apparently newer versions of the machines no longer use a flat ribbon cable.
