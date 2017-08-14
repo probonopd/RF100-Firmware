@@ -4,7 +4,7 @@
     "name": "Renkforce RF100xl",
     "inherits": "fdmprinter",
     "metadata": {
-        "author": "Simon Peter (based on RF100.ini by Conrad Electronic SE)",
+        "author": "Simon Peter",
         "category": "Other",
         "file_formats": "text/x-gcode",
         "manufacturer": "Renkforce",
@@ -31,7 +31,7 @@
             "value": "75.0"
         },
         "cool_fan_speed_min": {
-            "value": "25.0"
+            "value": "50.0"
         },
         "cool_lift_head": {
             "value": "True"
@@ -70,7 +70,7 @@
             "default_value": "Renkforce RF100"
         },
         "machine_start_gcode": {
-            "default_value": ";Start GCode\nG21 ;metric values\nG90 ;absolute positioning\nM82 ;set extruder to absolute mode\nM107 ;start with the fan off\nG28 X0 Y0 F2000.0 ;move X/Y to min endstops\nG28 Z0 ;move Z to min endstops\nG92 E0 ;zero the extruded length\nG1 Y-3.0 F2000.0 ;go outside print area\nG1 X100 E12.5  F1000.0 ;intro line\nG1 Z1.00 F2000 ;move the head up\nG1 E-1 F500 ;retract the filament a bit\nM117 Printing... ;Put printing message on LCD screen\n"
+            "default_value": ";Start GCode\nM905 K150 W{line_width} H{layer_height} D{material_diameter} ;Parameters for LIN_ADVANCE\nG21 ;metric values\nG90 ;absolute positioning\nM82 ;set extruder to absolute mode\nM107 ;start with the fan off\nG28 X0 Y0 F2000.0 ;move X/Y to min endstops\nG28 Z0 ;move Z to min endstops\nG92 E0 ;zero the extruded length\nG1 Y-3.0 F2000.0 ;go outside print area\nG1 X100 E12.5  F1000.0 ;intro line\nG1 Z1.00 F2000 ;move the head up\nG1 E-1 F500 ;retract the filament a bit\nM117 Printing... ;Put printing message on LCD screen\n"
         },
         "machine_width": {
             "value": "105"
@@ -134,6 +134,9 @@
         },
         "retraction_enable": {
             "value": "True"
+        },
+        "retraction_extra_prime_amount": {
+            "value": "1.0"
         },
         "retraction_hop_enabled": {
             "value": "1.0"
