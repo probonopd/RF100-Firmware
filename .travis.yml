@@ -27,6 +27,7 @@ script:
   - # rm Cura.AppDir/usr/bin/resources/definitions/* Cura.AppDir/usr/bin/resources/variants/* Cura.AppDir/usr/bin/resources/extruders/*
   - # mv fdm* Cura.AppDir/usr/bin/resources/definitions/
   - wget https://github.com/probonopd/RF100-Firmware/raw/community/cura/renkforce_rf100xl.def.json
+  - rm Cura.AppDir/usr/bin/resources/definitions/renkforce*
   - mv renkforce_rf100xl.def.json Cura.AppDir/usr/bin/resources/definitions/
   - file Cura.AppDir/.DirIcon 
   - mkdir -p Cura.AppDir/usr/share/icons/hicolor/128x128/apps
