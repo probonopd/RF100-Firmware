@@ -1,6 +1,6 @@
 {
     "id": "RF100xl",
-    "version": 3,
+    "version": 2,
     "name": "Renkforce RF100xl",
     "inherits": "fdmprinter",
     "metadata": {
