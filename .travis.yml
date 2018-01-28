@@ -18,7 +18,7 @@ script:
   - ls .
   - zip -r rf100_fw_$(git rev-parse --short HEAD).zip *.ino.hex *.pdf
   - # Create custom Cura AppImage with our printer definition preinstalled
-  - export VERSION=2.7.0
+  - export VERSION=3.1.0
   - wget -q -c "https://software.ultimaker.com/current/Cura-$VERSION.AppImage"
   - sudo mount Cura-$VERSION.AppImage /mnt -o loop,ro
   - sudo cp -r /mnt Cura.AppDir
