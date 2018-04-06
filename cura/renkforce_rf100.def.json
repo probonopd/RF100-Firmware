@@ -1,7 +1,7 @@
 {
-    "id": "RF100xl",
+    "id": "RF100",
     "version": 2,
-    "name": "Renkforce RF100xl",
+    "name": "Renkforce RF100",
     "inherits": "fdmprinter",
     "metadata": {
         "author": "Simon Peter",
