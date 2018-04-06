@@ -31,7 +31,12 @@
   #include <math.h>
 
   extern float destination[XYZE];
-  extern void set_current_to_destination();
+
+  #if AVR_AT90USB1286_FAMILY  // Teensyduino & Printrboard IDE extensions have compile errors without this
+    inline void set_current_to_destination() { COPY(current_position, destination); }
+  #else
+    extern void set_current_to_destination();
+  #endif
 
 #if ENABLED(DELTA)
 
@@ -39,7 +44,7 @@
                endstop_adj[ABC];
 
   extern float delta_radius,
-               delta_tower_angle_trim[2],
+               delta_tower_angle_trim[ABC],
                delta_tower[ABC][2],
                delta_diagonal_rod,
                delta_calibration_radius,
@@ -67,19 +72,17 @@
 
     const float de = destination[E_AXIS] - current_position[E_AXIS];
 
-    if (de == 0.0) return;
+    if (de == 0.0) return; // Printing moves only
 
-    const float dx = current_position[X_AXIS] - destination[X_AXIS],
-                dy = current_position[Y_AXIS] - destination[Y_AXIS],
+    const float dx = destination[X_AXIS] - current_position[X_AXIS],
+                dy = destination[Y_AXIS] - current_position[Y_AXIS],
                 xy_dist = HYPOT(dx, dy);
 
-    if (xy_dist == 0.0)
-      return;
-    else {
-      SERIAL_ECHOPGM("   fpmm=");
-      const float fpmm = de / xy_dist;
-      SERIAL_ECHO_F(fpmm, 6);
-    }
+    if (xy_dist == 0.0) return;
+
+    SERIAL_ECHOPGM("   fpmm=");
+    const float fpmm = de / xy_dist;
+    SERIAL_ECHO_F(fpmm, 6);
 
     SERIAL_ECHOPGM("    current=( ");
     SERIAL_ECHO_F(current_position[X_AXIS], 6);
@@ -99,7 +102,7 @@
     debug_echo_axis(E_AXIS);
     SERIAL_ECHOPGM(" )   ");
     SERIAL_ECHO(title);
-    SERIAL_EOL;
+    SERIAL_EOL();
 
   }
 
@@ -133,7 +136,7 @@
       SERIAL_ECHOPAIR(", ze=", end[Z_AXIS]);
       SERIAL_ECHOPAIR(", ee=", end[E_AXIS]);
       SERIAL_CHAR(')');
-      SERIAL_EOL;
+      SERIAL_EOL();
       debug_current_and_destination(PSTR("Start of ubl.line_to_destination()"));
     }
 
@@ -170,20 +173,20 @@
        * to create a 1-over number for us. That will allow us to do a floating point multiply instead of a floating point divide.
        */
 
-      const float xratio = (RAW_X_POSITION(end[X_AXIS]) - mesh_index_to_xpos(cell_dest_xi)) * (1.0 / (MESH_X_DIST)),
-                  z1 = z_values[cell_dest_xi    ][cell_dest_yi    ] + xratio *
-                      (z_values[cell_dest_xi + 1][cell_dest_yi    ] - z_values[cell_dest_xi][cell_dest_yi    ]),
-                  z2 = z_values[cell_dest_xi    ][cell_dest_yi + 1] + xratio *
-                      (z_values[cell_dest_xi + 1][cell_dest_yi + 1] - z_values[cell_dest_xi][cell_dest_yi + 1]);
+      const float xratio = (RAW_X_POSITION(end[X_AXIS]) - mesh_index_to_xpos(cell_dest_xi)) * (1.0 / (MESH_X_DIST));
+
+      float z1 = z_values[cell_dest_xi    ][cell_dest_yi    ] + xratio *
+                (z_values[cell_dest_xi + 1][cell_dest_yi    ] - z_values[cell_dest_xi][cell_dest_yi    ]),
+            z2 = z_values[cell_dest_xi    ][cell_dest_yi + 1] + xratio *
+                (z_values[cell_dest_xi + 1][cell_dest_yi + 1] - z_values[cell_dest_xi][cell_dest_yi + 1]);
+
+      if (cell_dest_xi >= GRID_MAX_POINTS_X - 1) z1 = z2 = 0.0;
 
       // we are done with the fractional X distance into the cell. Now with the two Z-Heights we have calculated, we
       // are going to apply the Y-Distance into the cell to interpolate the final Z correction.
 
       const float yratio = (RAW_Y_POSITION(end[Y_AXIS]) - mesh_index_to_ypos(cell_dest_yi)) * (1.0 / (MESH_Y_DIST));
-
-      float z0 = z1 + (z2 - z1) * yratio;
-
-      z0 *= fade_scaling_factor_for_z(end[Z_AXIS]);
+      float z0 = cell_dest_yi < GRID_MAX_POINTS_Y - 1 ? (z1 + (z2 - z1) * yratio) * fade_scaling_factor_for_z(end[Z_AXIS]) : 0.0;
 
       /**
        * If part of the Mesh is undefined, it will show up as NAN
@@ -494,15 +497,15 @@
 
       #if ENABLED(DELTA)  // apply delta inverse_kinematics
 
-        const float delta_A = rz + sqrt( delta_diagonal_rod_2_tower[A_AXIS]
+        const float delta_A = rz + SQRT( delta_diagonal_rod_2_tower[A_AXIS]
                                          - HYPOT2( delta_tower[A_AXIS][X_AXIS] - rx,
                                                    delta_tower[A_AXIS][Y_AXIS] - ry ));
 
-        const float delta_B = rz + sqrt( delta_diagonal_rod_2_tower[B_AXIS]
+        const float delta_B = rz + SQRT( delta_diagonal_rod_2_tower[B_AXIS]
                                          - HYPOT2( delta_tower[B_AXIS][X_AXIS] - rx,
                                                    delta_tower[B_AXIS][Y_AXIS] - ry ));
 
-        const float delta_C = rz + sqrt( delta_diagonal_rod_2_tower[C_AXIS]
+        const float delta_C = rz + SQRT( delta_diagonal_rod_2_tower[C_AXIS]
                                          - HYPOT2( delta_tower[C_AXIS][X_AXIS] - rx,
                                                    delta_tower[C_AXIS][Y_AXIS] - ry ));
 
@@ -518,8 +521,8 @@
         inverse_kinematics(lseg); // this writes delta[ABC] from lseg[XYZ]
                                   // should move the feedrate scaling to scara inverse_kinematics
 
-        float adiff = abs(delta[A_AXIS] - scara_oldA),
-              bdiff = abs(delta[B_AXIS] - scara_oldB);
+        const float adiff = FABS(delta[A_AXIS] - scara_oldA),
+                    bdiff = FABS(delta[B_AXIS] - scara_oldB);
         scara_oldA = delta[A_AXIS];
         scara_oldB = delta[B_AXIS];
         float s_feedrate = max(adiff, bdiff) * scara_feed_factor;

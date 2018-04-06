@@ -1,4 +1,4 @@
-# Renkforce RF100 Community Firmware [![Build Status](https://travis-ci.org/probonopd/RF100-Firmware.svg?branch=community)](https://travis-ci.org/probonopd/RF100-Firmware)
+# Renkforce RF100 Community Firmware
 
 Community-based Marlin firmware configured for the Conrad Electronic Renkforce RF100
 
@@ -6,14 +6,14 @@ Community-based Marlin firmware configured for the Conrad Electronic Renkforce R
 
 ## What is this?
 
-This is a recent version or Marlin 1.1.3 configured by the community for the RF100. The printer originally comes with an outdated version of Marlin. This one is much more recent, and contains the following optimizations:
+This is a recent version of Marlin 1.1.6 configured by the community for the RF100. The printer originally comes with an outdated version of Marlin. This one is much more recent, and contains the following optimizations:
 
-- It has the Marlin 1.1.3 features and bugfixes
+- It has the Marlin 1.1.6 features and bugfixes
 - It can be compiled and uploaded with the latest Arduino 1.8.x versions
-- The direction ef the knob is corrected. Turning it clockwise scrolls down in the menu
+- The direction of the knob is corrected.
 - The sensitivity of the knob is improved
 - You can now use the knob for bed-levelling rather than just the screws (I use the screws anyway)
-- The printable area is significantly increased. __CAUTION:__ You need to increaase the print bed, e.g., by clipping the glass from a 13x18 cm picture frame to the build plate. Be sure to lower the print bed entirely and then level the bed again.
+- The printable area is significantly increased to 105x110x110.
 
 ## How do I use this?
 
@@ -43,7 +43,10 @@ HICTOP 3D Printer Control Board MPX.3, similar to an Arduino Mega with an integr
 
 ### Functional upgrades
 
-* The standard print bed does not make full use of the available build space, there is at least 3 cm more available in the Y dimension. This makes quite a big difference! As a temporary solution, you can clip on a larger piece of glass with paper clips.
+* Printout Debug Information for HotEnd (Thermistor) on M109
+* Printout last reading of Thermistor before System halts on "MAX_TEMP_REACHED" (Nice for debugging the Thermistor)
+* Added "Load Filmament // Unload Filmament // Feed Filmament" to Prepare-Menu
+* The standard print bed does not make full use of the available build space, there is at least 3 cm more available in the Y dimension. This makes quite a big difference! To use the original print bed without modification, width is changed to 110mm, depth to 110mm, height to 110mm.
 * Automatic bed leveling. Possibly a sensor like the LJC18A3 might work (to be investigated).
 * Wireless printing https://github.com/probonopd/WirelessPrinting
 

@@ -38,14 +38,7 @@ Endstops endstops;
 
 // public:
 
-bool  Endstops::enabled = true,
-      Endstops::enabled_globally =
-        #if ENABLED(ENDSTOPS_ALWAYS_ON_DEFAULT)
-          (true)
-        #else
-          (false)
-        #endif
-      ;
+bool Endstops::enabled, Endstops::enabled_globally; // Initialized by settings.load()
 volatile char Endstops::endstop_hit_bits; // use X_MIN, Y_MIN, Z_MIN and Z_MIN_PROBE as BIT value
 
 #if ENABLED(Z_DUAL_ENDSTOPS)
@@ -161,7 +154,7 @@ void Endstops::report_state() {
     #define ENDSTOP_HIT_TEST_Y() _ENDSTOP_HIT_TEST(Y,'Y')
     #define ENDSTOP_HIT_TEST_Z() _ENDSTOP_HIT_TEST(Z,'Z')
 
-    SERIAL_ECHO_START;
+    SERIAL_ECHO_START();
     SERIAL_ECHOPGM(MSG_ENDSTOPS_HIT);
     ENDSTOP_HIT_TEST_X();
     ENDSTOP_HIT_TEST_Y();
@@ -171,7 +164,7 @@ void Endstops::report_state() {
       #define P_AXIS Z_AXIS
       if (TEST(endstop_hit_bits, Z_MIN_PROBE)) _ENDSTOP_HIT_ECHO(P, 'P');
     #endif
-    SERIAL_EOL;
+    SERIAL_EOL();
 
     #if ENABLED(ULTRA_LCD)
       lcd_status_printf_P(0, PSTR(MSG_LCD_ENDSTOPS " %c %c %c %c"), chrX, chrY, chrZ, chrP);
@@ -254,7 +247,7 @@ void Endstops::update() {
   #define _ENDSTOP(AXIS, MINMAX) AXIS ##_## MINMAX
   #define _ENDSTOP_PIN(AXIS, MINMAX) AXIS ##_## MINMAX ##_PIN
   #define _ENDSTOP_INVERTING(AXIS, MINMAX) AXIS ##_## MINMAX ##_ENDSTOP_INVERTING
-  #define _ENDSTOP_HIT(AXIS) SBI(endstop_hit_bits, _ENDSTOP(AXIS, MIN))
+  #define _ENDSTOP_HIT(AXIS, MINMAX) SBI(endstop_hit_bits, _ENDSTOP(AXIS, MINMAX))
 
   // UPDATE_ENDSTOP_BIT: set the current endstop bits for an endstop to its status
   #define UPDATE_ENDSTOP_BIT(AXIS, MINMAX) SET_BIT(current_endstop_bits, _ENDSTOP(AXIS, MINMAX), (READ(_ENDSTOP_PIN(AXIS, MINMAX)) != _ENDSTOP_INVERTING(AXIS, MINMAX)))
@@ -264,7 +257,7 @@ void Endstops::update() {
   #define UPDATE_ENDSTOP(AXIS,MINMAX) do { \
       UPDATE_ENDSTOP_BIT(AXIS, MINMAX); \
       if (TEST_ENDSTOP(_ENDSTOP(AXIS, MINMAX)) && stepper.current_block->steps[_AXIS(AXIS)] > 0) { \
-        _ENDSTOP_HIT(AXIS); \
+        _ENDSTOP_HIT(AXIS, MINMAX); \
         stepper.endstop_triggered(_AXIS(AXIS)); \
       } \
     } while(0)
@@ -274,9 +267,9 @@ void Endstops::update() {
     if (G38_move) {
       UPDATE_ENDSTOP_BIT(Z, MIN_PROBE);
       if (TEST_ENDSTOP(_ENDSTOP(Z, MIN_PROBE))) {
-        if      (stepper.current_block->steps[_AXIS(X)] > 0) { _ENDSTOP_HIT(X); stepper.endstop_triggered(_AXIS(X)); }
-        else if (stepper.current_block->steps[_AXIS(Y)] > 0) { _ENDSTOP_HIT(Y); stepper.endstop_triggered(_AXIS(Y)); }
-        else if (stepper.current_block->steps[_AXIS(Z)] > 0) { _ENDSTOP_HIT(Z); stepper.endstop_triggered(_AXIS(Z)); }
+        if      (stepper.current_block->steps[_AXIS(X)] > 0) { _ENDSTOP_HIT(X, MIN); stepper.endstop_triggered(_AXIS(X)); }
+        else if (stepper.current_block->steps[_AXIS(Y)] > 0) { _ENDSTOP_HIT(Y, MIN); stepper.endstop_triggered(_AXIS(Y)); }
+        else if (stepper.current_block->steps[_AXIS(Z)] > 0) { _ENDSTOP_HIT(Z, MIN); stepper.endstop_triggered(_AXIS(Z)); }
         G38_endstop_hit = true;
       }
     }

@@ -50,7 +50,9 @@
 /**
  * Warnings for old configurations
  */
-#if WATCH_TEMP_PERIOD > 500
+#if !defined(X_BED_SIZE) || !defined(Y_BED_SIZE)
+  #error "X_BED_SIZE and Y_BED_SIZE are now required! Please update your configuration."
+#elif WATCH_TEMP_PERIOD > 500
   #error "WATCH_TEMP_PERIOD now uses seconds instead of milliseconds."
 #elif DISABLED(THERMAL_PROTECTION_HOTENDS) && (defined(WATCH_TEMP_PERIOD) || defined(THERMAL_PROTECTION_PERIOD))
   #error "Thermal Runaway Protection for hotends is now enabled with THERMAL_PROTECTION_HOTENDS."
@@ -204,6 +206,12 @@
   #error "Replace SLED_PIN with SOL1_PIN (applies to both Z_PROBE_SLED and SOLENOID_PROBE)."
 #elif defined(CONTROLLERFAN_PIN)
   #error "CONTROLLERFAN_PIN is now CONTROLLER_FAN_PIN, enabled with USE_CONTROLLER_FAN. Please update your Configuration_adv.h."
+#elif defined(MIN_RETRACT)
+  #error "MIN_RETRACT is now MIN_AUTORETRACT and MAX_AUTORETRACT. Please update your Configuration_adv.h."
+#elif defined(ADVANCE)
+  #error "ADVANCE was removed in Marlin 1.1.6. Please use LIN_ADVANCE."
+#elif defined(NEOPIXEL_RGBW_LED)
+  #error "NEOPIXEL_RGBW_LED is now NEOPIXEL_LED. Please update your configuration."
 #endif
 
 /**
@@ -241,6 +249,12 @@
 #endif
 
 /**
+ * Validate that the bed size fits
+ */
+static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
+  "Movement bounds ([XY]_MIN_POS, [XY]_MAX_POS) are too narrow to contain [XY]_BED_SIZE.");
+
+/**
  * Progress Bar
  */
 #if ENABLED(LCD_PROGRESS_BAR)
@@ -271,19 +285,13 @@
 #endif
 
 /**
- * Delta requirements
+ * I2C Position Encoders
  */
-#if ENABLED(DELTA)
-  #if DISABLED(USE_XMAX_PLUG) && DISABLED(USE_YMAX_PLUG) && DISABLED(USE_ZMAX_PLUG)
-    #error "You probably want to use Max Endstops for DELTA!"
-  #elif ENABLED(ENABLE_LEVELING_FADE_HEIGHT) && DISABLED(AUTO_BED_LEVELING_BILINEAR) && !UBL_DELTA
-    #error "ENABLE_LEVELING_FADE_HEIGHT on DELTA requires AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
-  #elif ABL_GRID
-    #if (GRID_MAX_POINTS_X & 1) == 0 || (GRID_MAX_POINTS_Y & 1) == 0
-      #error "DELTA requires GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y to be odd numbers."
-    #elif GRID_MAX_POINTS_X < 3
-      #error "DELTA requires GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y to be 3 or higher."
-    #endif
+#if ENABLED(I2C_POSITION_ENCODERS)
+  #if DISABLED(BABYSTEPPING)
+    #error "I2C_POSITION_ENCODERS requires BABYSTEPPING."
+  #elif !WITHIN(I2CPE_ENCODER_CNT, 1, 5)
+    #error "I2CPE_ENCODER_CNT must be between 1 and 5."
   #endif
 #endif
 
@@ -291,14 +299,20 @@
  * Babystepping
  */
 #if ENABLED(BABYSTEPPING)
-  #if DISABLED(ULTRA_LCD)
+  #if DISABLED(ULTRA_LCD) && DISABLED(I2C_POSITION_ENCODERS)
     #error "BABYSTEPPING requires an LCD controller."
   #elif ENABLED(SCARA)
     #error "BABYSTEPPING is not implemented for SCARA yet."
   #elif ENABLED(DELTA) && ENABLED(BABYSTEP_XY)
     #error "BABYSTEPPING only implemented for Z axis on deltabots."
+  #elif ENABLED(BABYSTEP_ZPROBE_OFFSET) && ENABLED(MESH_BED_LEVELING)
+    #error "MESH_BED_LEVELING and BABYSTEP_ZPROBE_OFFSET is not a valid combination"
   #elif ENABLED(BABYSTEP_ZPROBE_OFFSET) && !HAS_BED_PROBE
     #error "BABYSTEP_ZPROBE_OFFSET requires a probe."
+  #elif ENABLED(BABYSTEP_ZPROBE_GFX_OVERLAY) && !ENABLED(DOGLCD)
+    #error "BABYSTEP_ZPROBE_GFX_OVERLAY requires a DOGLCD."
+  #elif ENABLED(BABYSTEP_ZPROBE_GFX_OVERLAY) && !ENABLED(BABYSTEP_ZPROBE_OFFSET)
+    #error "BABYSTEP_ZPROBE_GFX_OVERLAY requires a BABYSTEP_ZPROBE_OFFSET."
   #endif
 #endif
 
@@ -325,6 +339,8 @@
     #error "EXTRUDER_RUNOUT_PREVENT is incompatible with ADVANCED_PAUSE_FEATURE."
   #elif ENABLED(PARK_HEAD_ON_PAUSE) && DISABLED(SDSUPPORT) && DISABLED(NEWPANEL) && DISABLED(EMERGENCY_PARSER)
     #error "PARK_HEAD_ON_PAUSE requires SDSUPPORT, EMERGENCY_PARSER, or an LCD controller."
+  #elif ENABLED(HOME_BEFORE_FILAMENT_CHANGE) && DISABLED(PAUSE_PARK_NO_STEPPER_TIMEOUT)
+    #error "HOME_BEFORE_FILAMENT_CHANGE requires PAUSE_PARK_NO_STEPPER_TIMEOUT"
   #endif
 #endif
 
@@ -352,17 +368,30 @@
     #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
   #endif
 
+#elif ENABLED(MK2_MULTIPLEXER)
+  #error "MK2_MULTIPLEXER requires 2 or more EXTRUDERS."
 #elif ENABLED(SINGLENOZZLE)
   #error "SINGLENOZZLE requires 2 or more EXTRUDERS."
 #endif
 
 /**
- * A dual nozzle x-carriage with switching servo
+ * Sanity checking for the Průša MK2 Multiplexer
+ */
+#ifdef SNMM
+  #error "SNMM is now MK2_MULTIPLEXER. Please update your configuration."
+#elif ENABLED(MK2_MULTIPLEXER) && DISABLED(ADVANCED_PAUSE_FEATURE)
+  #error "ADVANCED_PAUSE_FEATURE is required with MK2_MULTIPLEXER."
+#endif
+
+/**
+ * A Dual Nozzle carriage with switching servo
  */
 #if ENABLED(SWITCHING_NOZZLE)
-  #if ENABLED(SINGLENOZZLE)
+  #if ENABLED(DUAL_X_CARRIAGE)
+    #error "SWITCHING_NOZZLE and DUAL_X_CARRIAGE are incompatible."
+  #elif ENABLED(SINGLENOZZLE)
     #error "SWITCHING_NOZZLE and SINGLENOZZLE are incompatible."
-  #elif EXTRUDERS < 2
+  #elif EXTRUDERS != 2
     #error "SWITCHING_NOZZLE requires exactly 2 EXTRUDERS."
   #elif NUM_SERVOS < 1
     #error "SWITCHING_NOZZLE requires NUM_SERVOS >= 1."
@@ -372,14 +401,8 @@
 /**
  * Single Stepper Dual Extruder with switching servo
  */
-#if ENABLED(SWITCHING_EXTRUDER)
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #error "SWITCHING_EXTRUDER and DUAL_X_CARRIAGE are incompatible."
-  #elif EXTRUDERS != 2
-    #error "SWITCHING_EXTRUDER requires exactly 2 EXTRUDERS."
-  #elif NUM_SERVOS < 1
-    #error "SWITCHING_EXTRUDER requires NUM_SERVOS >= 1."
-  #endif
+#if ENABLED(SWITCHING_EXTRUDER) && NUM_SERVOS < 1
+  #error "SWITCHING_EXTRUDER requires NUM_SERVOS >= 1."
 #endif
 
 /**
@@ -402,6 +425,44 @@
 #endif
 
 /**
+ * Parking Extruder requirements
+ */
+#if ENABLED(PARKING_EXTRUDER)
+  #if ENABLED(DUAL_X_CARRIAGE)
+    #error "PARKING_EXTRUDER and DUAL_X_CARRIAGE are incompatible."
+  #elif ENABLED(SINGLENOZZLE)
+    #error "PARKING_EXTRUDER and SINGLENOZZLE are incompatible."
+  #elif ENABLED(EXT_SOLENOID)
+    #error "PARKING_EXTRUDER and EXT_SOLENOID are incompatible. (Pins are used twice.)"
+  #elif EXTRUDERS != 2
+    #error "PARKING_EXTRUDER requires exactly 2 EXTRUDERS."
+  #elif !PIN_EXISTS(SOL0) || !PIN_EXISTS(SOL1)
+    #error "PARKING_EXTRUDER requires SOL0_PIN and SOL1_PIN."
+  #elif !defined(PARKING_EXTRUDER_PARKING_X)
+    #error "PARKING_EXTRUDER requires PARKING_EXTRUDER_PARKING_X."
+  #elif !defined(PARKING_EXTRUDER_SECURITY_RAISE)
+    #error "PARKING_EXTRUDER requires PARKING_EXTRUDER_SECURITY_RAISE."
+  #elif PARKING_EXTRUDER_SECURITY_RAISE < 0
+    #error "PARKING_EXTRUDER_SECURITY_RAISE must be 0 or higher."
+  #elif !defined(PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE) || !WITHIN(PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE, LOW, HIGH)
+    #error "PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE must be defined as HIGH or LOW."
+  #elif !defined(PARKING_EXTRUDER_SOLENOIDS_DELAY) || !WITHIN(PARKING_EXTRUDER_SOLENOIDS_DELAY, 0, 2000)
+    #error "PARKING_EXTRUDER_SOLENOIDS_DELAY must be between 0 and 2000 (ms)."
+  #endif
+#endif
+
+/**
+ * Part-Cooling Fan Multiplexer requirements
+ */
+#if PIN_EXISTS(FANMUX1)
+  #if !HAS_FANMUX
+    #error "FANMUX0_PIN must be set before FANMUX1_PIN can be set."
+  #endif
+#elif PIN_EXISTS(FANMUX2)
+  #error "FANMUX0_PIN and FANMUX1_PIN must be set before FANMUX2_PIN can be set."
+#endif
+
+/**
  * Limited number of servos
  */
 #if NUM_SERVOS > 4
@@ -409,10 +470,10 @@
 #endif
 
 /**
- * Servo deactivation depends on servo endstops or switching nozzle
+ * Servo deactivation depends on servo endstops, switching nozzle, or switching extruder
  */
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_ENDSTOP && !defined(SWITCHING_NOZZLE_SERVO_NR)
-  #error "Z_ENDSTOP_SERVO_NR or switching nozzle is required for DEACTIVATE_SERVOS_AFTER_MOVE."
+#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_ENDSTOP && !defined(SWITCHING_NOZZLE_SERVO_NR) && !defined(SWITCHING_EXTRUDER_SERVO_NR)
+  #error "Z_ENDSTOP_SERVO_NR, switching nozzle, or switching extruder is required for DEACTIVATE_SERVOS_AFTER_MOVE."
 #endif
 
 /**
@@ -430,46 +491,61 @@
 #endif
 
 /**
- * Allow only one bed leveling option to be defined
+ * Kinematics
+ */
+
+/**
+ * Allow only one kinematic type to be defined
  */
 static_assert(1 >= 0
-  #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+  #if ENABLED(DELTA)
     + 1
   #endif
-  #if ENABLED(AUTO_BED_LEVELING_3POINT)
+  #if ENABLED(MORGAN_SCARA)
     + 1
   #endif
-  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  #if ENABLED(MAKERARM_SCARA)
     + 1
   #endif
-  #if ENABLED(AUTO_BED_LEVELING_UBL)
+  #if ENABLED(COREXY)
     + 1
   #endif
-  #if ENABLED(MESH_BED_LEVELING)
+  #if ENABLED(COREXZ)
     + 1
   #endif
-  , "Select only one of: MESH_BED_LEVELING, AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_3POINT, AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
+  #if ENABLED(COREYZ)
+    + 1
+  #endif
+  #if ENABLED(COREYX)
+    + 1
+  #endif
+  #if ENABLED(COREZX)
+    + 1
+  #endif
+  #if ENABLED(COREZY)
+    + 1
+  #endif
+  , "Please enable only one of DELTA, MORGAN_SCARA, MAKERARM_SCARA, COREXY, COREYX, COREXZ, COREZX, COREYZ, or COREZY."
 );
 
 /**
- * Mesh Bed Leveling
+ * Delta requirements
  */
-#if ENABLED(MESH_BED_LEVELING)
-  #if ENABLED(DELTA)
-    #error "MESH_BED_LEVELING does not yet support DELTA printers."
-  #elif GRID_MAX_POINTS_X > 9 || GRID_MAX_POINTS_Y > 9
-    #error "GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y must be less than 10 for MBL."
-  #endif
-#endif
-
-/**
- * Unified Bed Leveling
- */
-#if ENABLED(AUTO_BED_LEVELING_UBL)
-  #if IS_SCARA
-    #error "AUTO_BED_LEVELING_UBL does not yet support SCARA printers."
-  #elif DISABLED(NEWPANEL)
-    #error "AUTO_BED_LEVELING_UBL requires an LCD controller."
+#if ENABLED(DELTA)
+  #if DISABLED(USE_XMAX_PLUG) && DISABLED(USE_YMAX_PLUG) && DISABLED(USE_ZMAX_PLUG)
+    #error "You probably want to use Max Endstops for DELTA!"
+  #elif ENABLED(ENABLE_LEVELING_FADE_HEIGHT) && DISABLED(AUTO_BED_LEVELING_BILINEAR) && !UBL_DELTA
+    #error "ENABLE_LEVELING_FADE_HEIGHT on DELTA requires AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
+  #elif ENABLED(DELTA_AUTO_CALIBRATION) && !PROBE_SELECTED
+    #error "DELTA_AUTO_CALIBRATION requires a probe: PROBE_MANUALLY, FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, Z Servo."
+  #elif ENABLED(DELTA_AUTO_CALIBRATION) && ENABLED(PROBE_MANUALLY) && DISABLED(ULTIPANEL)
+    #error "DELTA_AUTO_CALIBRATION requires an LCD controller with PROBE_MANUALLY."
+  #elif ABL_GRID
+    #if (GRID_MAX_POINTS_X & 1) == 0 || (GRID_MAX_POINTS_Y & 1) == 0
+      #error "DELTA requires GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y to be odd numbers."
+    #elif GRID_MAX_POINTS_X < 3
+      #error "DELTA requires GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y to be 3 or higher."
+    #endif
   #endif
 #endif
 
@@ -504,7 +580,6 @@ static_assert(1 >= 0
   #endif
   , "Please enable only one probe option: PROBE_MANUALLY, FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
 );
-
 
 #if PROBE_SELECTED
 
@@ -571,26 +646,125 @@ static_assert(1 >= 0
     #error "Probes need Z_CLEARANCE_BETWEEN_PROBES >= 0."
   #endif
 
-   /**
-    * Advanced Pause is required in order to turn the heaters off during probing
-    */
-   #if (ENABLED(PROBING_HEATERS_OFF) && DISABLED(ADVANCED_PAUSE_FEATURE))
-     #error "PROBING_HEATERS_OFF requires ADVANCED_PAUSE_FEATURE"
-   #endif
-
 #else
 
   /**
    * Require some kind of probe for bed leveling and probe testing
    */
-  #if HAS_ABL
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
-      #error "Unified Bed Leveling requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
+  #if HAS_ABL && DISABLED(AUTO_BED_LEVELING_UBL)
+    #error "Auto Bed Leveling requires one of these: PROBE_MANUALLY, FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or a Z Servo."
+  #endif
+
+#endif
+
+#if ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST) && !HAS_BED_PROBE
+  #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
+#endif
+
+/**
+ * Allow only one bed leveling option to be defined
+ */
+static_assert(1 >= 0
+  #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+    + 1
+  #endif
+  #if ENABLED(AUTO_BED_LEVELING_3POINT)
+    + 1
+  #endif
+  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+    + 1
+  #endif
+  #if ENABLED(AUTO_BED_LEVELING_UBL)
+    + 1
+  #endif
+  #if ENABLED(MESH_BED_LEVELING)
+    + 1
+  #endif
+  , "Select only one of: MESH_BED_LEVELING, AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_3POINT, AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
+);
+
+/**
+ * Bed Leveling Requirements
+ */
+
+#if ENABLED(AUTO_BED_LEVELING_UBL)
+
+  /**
+   * Unified Bed Leveling
+   */
+
+  #if IS_SCARA
+    #error "AUTO_BED_LEVELING_UBL does not yet support SCARA printers."
+  #elif DISABLED(EEPROM_SETTINGS)
+    #error "AUTO_BED_LEVELING_UBL requires EEPROM_SETTINGS. Please update your configuration."
+  #elif !WITHIN(GRID_MAX_POINTS_X, 3, 15) || !WITHIN(GRID_MAX_POINTS_Y, 3, 15)
+    #error "GRID_MAX_POINTS_[XY] must be a whole number between 3 and 15."
+  #else
+    static_assert(WITHIN(UBL_PROBE_PT_1_X, MIN_PROBE_X, MAX_PROBE_X), "UBL_PROBE_PT_1_X can't be reached by the Z probe.");
+    static_assert(WITHIN(UBL_PROBE_PT_2_X, MIN_PROBE_X, MAX_PROBE_X), "UBL_PROBE_PT_2_X can't be reached by the Z probe.");
+    static_assert(WITHIN(UBL_PROBE_PT_3_X, MIN_PROBE_X, MAX_PROBE_X), "UBL_PROBE_PT_3_X can't be reached by the Z probe.");
+    static_assert(WITHIN(UBL_PROBE_PT_1_Y, MIN_PROBE_Y, MAX_PROBE_Y), "UBL_PROBE_PT_1_Y can't be reached by the Z probe.");
+    static_assert(WITHIN(UBL_PROBE_PT_2_Y, MIN_PROBE_Y, MAX_PROBE_Y), "UBL_PROBE_PT_2_Y can't be reached by the Z probe.");
+    static_assert(WITHIN(UBL_PROBE_PT_3_Y, MIN_PROBE_Y, MAX_PROBE_Y), "UBL_PROBE_PT_3_Y can't be reached by the Z probe.");
+  #endif
+
+#elif HAS_ABL
+
+  /**
+   * Auto Bed Leveling
+   */
+
+  #if ENABLED(USE_RAW_KINEMATICS)
+    #error "USE_RAW_KINEMATICS is not compatible with AUTO_BED_LEVELING"
+  #endif
+
+  /**
+   * Delta and SCARA have limited bed leveling options
+   */
+  #if IS_SCARA && DISABLED(AUTO_BED_LEVELING_BILINEAR)
+    #error "Only AUTO_BED_LEVELING_BILINEAR currently supports SCARA bed leveling."
+  #endif
+
+  /**
+   * Check auto bed leveling probe points
+   */
+  #if ABL_GRID
+
+    #ifdef DELTA_PROBEABLE_RADIUS
+      static_assert(LEFT_PROBE_BED_POSITION >= -DELTA_PROBEABLE_RADIUS, "LEFT_PROBE_BED_POSITION must be within DELTA_PROBEABLE_RADIUS.");
+      static_assert(RIGHT_PROBE_BED_POSITION <= DELTA_PROBEABLE_RADIUS, "RIGHT_PROBE_BED_POSITION must be within DELTA_PROBEABLE_RADIUS.");
+      static_assert(FRONT_PROBE_BED_POSITION >= -DELTA_PROBEABLE_RADIUS, "FRONT_PROBE_BED_POSITION must be within DELTA_PROBEABLE_RADIUS.");
+      static_assert(BACK_PROBE_BED_POSITION <= DELTA_PROBEABLE_RADIUS, "BACK_PROBE_BED_POSITION must be within DELTA_PROBEABLE_RADIUS.");
     #else
-      #error "Auto Bed Leveling requires one of these: PROBE_MANUALLY, FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or a Z Servo."
+      static_assert(LEFT_PROBE_BED_POSITION < RIGHT_PROBE_BED_POSITION, "LEFT_PROBE_BED_POSITION must be less than RIGHT_PROBE_BED_POSITION.");
+      static_assert(FRONT_PROBE_BED_POSITION < BACK_PROBE_BED_POSITION, "FRONT_PROBE_BED_POSITION must be less than BACK_PROBE_BED_POSITION.");
+      static_assert(LEFT_PROBE_BED_POSITION >= MIN_PROBE_X, "LEFT_PROBE_BED_POSITION can't be reached by the Z probe.");
+      static_assert(RIGHT_PROBE_BED_POSITION <= MAX_PROBE_X, "RIGHT_PROBE_BED_POSITION can't be reached by the Z probe.");
+      static_assert(FRONT_PROBE_BED_POSITION >= MIN_PROBE_Y, "FRONT_PROBE_BED_POSITION can't be reached by the Z probe.");
+      static_assert(BACK_PROBE_BED_POSITION <= MAX_PROBE_Y, "BACK_PROBE_BED_POSITION can't be reached by the Z probe.");
     #endif
-  #elif ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
-    #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
+
+  #else // AUTO_BED_LEVELING_3POINT
+
+    static_assert(WITHIN(ABL_PROBE_PT_1_X, MIN_PROBE_X, MAX_PROBE_X), "ABL_PROBE_PT_1_X can't be reached by the Z probe.");
+    static_assert(WITHIN(ABL_PROBE_PT_2_X, MIN_PROBE_X, MAX_PROBE_X), "ABL_PROBE_PT_2_X can't be reached by the Z probe.");
+    static_assert(WITHIN(ABL_PROBE_PT_3_X, MIN_PROBE_X, MAX_PROBE_X), "ABL_PROBE_PT_3_X can't be reached by the Z probe.");
+    static_assert(WITHIN(ABL_PROBE_PT_1_Y, MIN_PROBE_Y, MAX_PROBE_Y), "ABL_PROBE_PT_1_Y can't be reached by the Z probe.");
+    static_assert(WITHIN(ABL_PROBE_PT_2_Y, MIN_PROBE_Y, MAX_PROBE_Y), "ABL_PROBE_PT_2_Y can't be reached by the Z probe.");
+    static_assert(WITHIN(ABL_PROBE_PT_3_Y, MIN_PROBE_Y, MAX_PROBE_Y), "ABL_PROBE_PT_3_Y can't be reached by the Z probe.");
+
+  #endif // AUTO_BED_LEVELING_3POINT
+
+#elif ENABLED(MESH_BED_LEVELING)
+
+  /**
+   * Mesh Bed Leveling
+   */
+
+  #if ENABLED(DELTA)
+    #error "MESH_BED_LEVELING does not yet support DELTA printers."
+  #elif GRID_MAX_POINTS_X > 9 || GRID_MAX_POINTS_Y > 9
+    #error "GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y must be less than 10 for MBL."
   #endif
 
 #endif
@@ -602,7 +776,7 @@ static_assert(1 >= 0
   #if DISABLED(ULTIPANEL)
     #error "LCD_BED_LEVELING requires an LCD controller."
   #elif DISABLED(MESH_BED_LEVELING) && !(HAS_ABL && ENABLED(PROBE_MANUALLY))
-    #error "LCD_BED_LEVELING requires MESH_BED_LEVELING or PROBE_MANUALLY."
+    #error "LCD_BED_LEVELING requires MESH_BED_LEVELING or PROBE_MANUALLY with auto bed leveling enabled."
   #endif
 #endif
 
@@ -633,88 +807,13 @@ static_assert(1 >= 0
 #endif // Z_SAFE_HOMING
 
 /**
- * Auto Bed Leveling
+ * Make sure DISABLE_[XYZ] compatible with selected homing options
  */
-#if HAS_ABL
-
-  #if ENABLED(USE_RAW_KINEMATICS)
-    #error "USE_RAW_KINEMATICS is not compatible with AUTO_BED_LEVELING"
+#if ENABLED(DISABLE_X) || ENABLED(DISABLE_Y) || ENABLED(DISABLE_Z)
+  #if ENABLED(HOME_AFTER_DEACTIVATE) || ENABLED(Z_SAFE_HOMING)
+    #error "DISABLE_[XYZ] not compatible with HOME_AFTER_DEACTIVATE or Z_SAFE_HOMING."
   #endif
-
-  /**
-   * Delta and SCARA have limited bed leveling options
-   */
-  #if IS_SCARA && DISABLED(AUTO_BED_LEVELING_BILINEAR)
-    #error "Only AUTO_BED_LEVELING_BILINEAR currently supports SCARA bed leveling."
-  #endif
-
-  /**
-   * Check auto bed leveling sub-options, especially probe points
-   */
-  #if ABL_GRID
-    #ifndef DELTA_PROBEABLE_RADIUS
-      #if LEFT_PROBE_BED_POSITION > RIGHT_PROBE_BED_POSITION
-        #error "LEFT_PROBE_BED_POSITION must be less than RIGHT_PROBE_BED_POSITION."
-      #elif FRONT_PROBE_BED_POSITION > BACK_PROBE_BED_POSITION
-        #error "FRONT_PROBE_BED_POSITION must be less than BACK_PROBE_BED_POSITION."
-      #endif
-      #if LEFT_PROBE_BED_POSITION < MIN_PROBE_X
-        #error "The given LEFT_PROBE_BED_POSITION can't be reached by the Z probe."
-      #elif RIGHT_PROBE_BED_POSITION > MAX_PROBE_X
-        #error "The given RIGHT_PROBE_BED_POSITION can't be reached by the Z probe."
-      #elif FRONT_PROBE_BED_POSITION < MIN_PROBE_Y
-        #error "The given FRONT_PROBE_BED_POSITION can't be reached by the Z probe."
-      #elif BACK_PROBE_BED_POSITION > MAX_PROBE_Y
-        #error "The given BACK_PROBE_BED_POSITION can't be reached by the Z probe."
-      #endif
-    #endif
-  #elif ENABLED(AUTO_BED_LEVELING_UBL)
-    #if DISABLED(EEPROM_SETTINGS)
-      #error "AUTO_BED_LEVELING_UBL requires EEPROM_SETTINGS. Please update your configuration."
-    #elif !WITHIN(GRID_MAX_POINTS_X, 3, 15) || !WITHIN(GRID_MAX_POINTS_Y, 3, 15)
-      #error "GRID_MAX_POINTS_[XY] must be a whole number between 3 and 15."
-    #endif
-    #if IS_CARTESIAN
-      #if !WITHIN(GRID_MAX_POINTS_X, 3, 15) || !WITHIN(GRID_MAX_POINTS_Y, 3, 15)
-        #error "GRID_MAX_POINTS_[XY] must be a whole number between 3 and 15."
-      #elif !WITHIN(UBL_PROBE_PT_1_X, MIN_PROBE_X, MAX_PROBE_X)
-        #error "The given UBL_PROBE_PT_1_X can't be reached by the Z probe."
-      #elif !WITHIN(UBL_PROBE_PT_2_X, MIN_PROBE_X, MAX_PROBE_X)
-        #error "The given UBL_PROBE_PT_2_X can't be reached by the Z probe."
-      #elif !WITHIN(UBL_PROBE_PT_3_X, MIN_PROBE_X, MAX_PROBE_X)
-        #error "The given UBL_PROBE_PT_3_X can't be reached by the Z probe."
-      #elif !WITHIN(UBL_PROBE_PT_1_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-        #error "The given UBL_PROBE_PT_1_Y can't be reached by the Z probe."
-      #elif !WITHIN(UBL_PROBE_PT_2_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-        #error "The given UBL_PROBE_PT_2_Y can't be reached by the Z probe."
-      #elif !WITHIN(UBL_PROBE_PT_3_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-        #error "The given UBL_PROBE_PT_3_Y can't be reached by the Z probe."
-      #endif
-    #endif
-  #else // AUTO_BED_LEVELING_3POINT
-    #if !WITHIN(ABL_PROBE_PT_1_X, MIN_PROBE_X, MAX_PROBE_X)
-      #error "The given ABL_PROBE_PT_1_X can't be reached by the Z probe."
-    #elif !WITHIN(ABL_PROBE_PT_2_X, MIN_PROBE_X, MAX_PROBE_X)
-      #error "The given ABL_PROBE_PT_2_X can't be reached by the Z probe."
-    #elif !WITHIN(ABL_PROBE_PT_3_X, MIN_PROBE_X, MAX_PROBE_X)
-      #error "The given ABL_PROBE_PT_3_X can't be reached by the Z probe."
-    #elif !WITHIN(ABL_PROBE_PT_1_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-      #error "The given ABL_PROBE_PT_1_Y can't be reached by the Z probe."
-    #elif !WITHIN(ABL_PROBE_PT_2_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-      #error "The given ABL_PROBE_PT_2_Y can't be reached by the Z probe."
-    #elif !WITHIN(ABL_PROBE_PT_3_Y, MIN_PROBE_Y, MAX_PROBE_Y)
-      #error "The given ABL_PROBE_PT_3_Y can't be reached by the Z probe."
-    #endif
-  #endif // AUTO_BED_LEVELING_3POINT
-
-#endif // HAS_ABL
-
-/**
- * Advance Extrusion
- */
-#if ENABLED(ADVANCE) && ENABLED(LIN_ADVANCE)
-  #error "You can enable ADVANCE or LIN_ADVANCE, but not both."
-#endif
+#endif // DISABLE_[XYZ]
 
 /**
  * Filament Width Sensor
@@ -740,40 +839,6 @@ static_assert(1 >= 0
 #if ENABLED(U8GLIB_SSD1306) && ENABLED(U8GLIB_SH1106)
   #error "Only enable one SAV_3DGLCD display type: U8GLIB_SSD1306 or U8GLIB_SH1106."
 #endif
-
-/**
- * Don't set more than one kinematic type
- */
-static_assert(1 >= 0
-  #if ENABLED(DELTA)
-    + 1
-  #endif
-  #if ENABLED(MORGAN_SCARA)
-    + 1
-  #endif
-  #if ENABLED(MAKERARM_SCARA)
-    + 1
-  #endif
-  #if ENABLED(COREXY)
-    + 1
-  #endif
-  #if ENABLED(COREXZ)
-    + 1
-  #endif
-  #if ENABLED(COREYZ)
-    + 1
-  #endif
-  #if ENABLED(COREYX)
-    + 1
-  #endif
-  #if ENABLED(COREZX)
-    + 1
-  #endif
-  #if ENABLED(COREZY)
-    + 1
-  #endif
-  , "Please enable only one of DELTA, MORGAN_SCARA, MAKERARM_SCARA, COREXY, COREYX, COREXZ, COREZX, COREYZ, or COREZY."
-);
 
 /**
  * Allen Key
@@ -887,28 +952,28 @@ static_assert(1 >= 0
           #error "TEMP_4_PIN not defined for this board."
         #endif
       #elif TEMP_SENSOR_4 != 0
-        #error "TEMP_SENSOR_4 shouldn't be set with only 4 extruders."
+        #error "TEMP_SENSOR_4 shouldn't be set with only 4 HOTENDS."
       #endif
     #elif TEMP_SENSOR_3 != 0
-      #error "TEMP_SENSOR_3 shouldn't be set with only 3 extruders."
+      #error "TEMP_SENSOR_3 shouldn't be set with only 3 HOTENDS."
     #elif TEMP_SENSOR_4 != 0
-      #error "TEMP_SENSOR_4 shouldn't be set with only 3 extruders."
+      #error "TEMP_SENSOR_4 shouldn't be set with only 3 HOTENDS."
     #endif
   #elif TEMP_SENSOR_2 != 0
-    #error "TEMP_SENSOR_2 shouldn't be set with only 2 extruders."
+    #error "TEMP_SENSOR_2 shouldn't be set with only 2 HOTENDS."
   #elif TEMP_SENSOR_3 != 0
-    #error "TEMP_SENSOR_3 shouldn't be set with only 2 extruders."
+    #error "TEMP_SENSOR_3 shouldn't be set with only 2 HOTENDS."
   #elif TEMP_SENSOR_4 != 0
-    #error "TEMP_SENSOR_4 shouldn't be set with only 2 extruders."
+    #error "TEMP_SENSOR_4 shouldn't be set with only 2 HOTENDS."
   #endif
 #elif TEMP_SENSOR_1 != 0 && DISABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-  #error "TEMP_SENSOR_1 shouldn't be set with only 1 extruder."
+  #error "TEMP_SENSOR_1 shouldn't be set with only 1 HOTEND."
 #elif TEMP_SENSOR_2 != 0
-  #error "TEMP_SENSOR_2 shouldn't be set with only 1 extruder."
+  #error "TEMP_SENSOR_2 shouldn't be set with only 1 HOTEND."
 #elif TEMP_SENSOR_3 != 0
-  #error "TEMP_SENSOR_3 shouldn't be set with only 1 extruder."
+  #error "TEMP_SENSOR_3 shouldn't be set with only 1 HOTEND."
 #elif TEMP_SENSOR_4 != 0
-  #error "TEMP_SENSOR_4 shouldn't be set with only 1 extruder."
+  #error "TEMP_SENSOR_4 shouldn't be set with only 1 HOTEND."
 #endif
 
 #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT) && TEMP_SENSOR_1 == 0
@@ -940,21 +1005,21 @@ static_assert(1 >= 0
 #endif
 
 /**
- * Test Extruder Pins
+ * Test Extruder Stepper Pins
  */
-#if EXTRUDERS > 4
+#if E_STEPPERS > 4
   #if !PIN_EXISTS(E4_STEP) || !PIN_EXISTS(E4_DIR) || !PIN_EXISTS(E4_ENABLE)
     #error "E4_STEP_PIN, E4_DIR_PIN, or E4_ENABLE_PIN not defined for this board."
   #endif
-#elif EXTRUDERS > 3
+#elif E_STEPPERS > 3
   #if !PIN_EXISTS(E3_STEP) || !PIN_EXISTS(E3_DIR) || !PIN_EXISTS(E3_ENABLE)
     #error "E3_STEP_PIN, E3_DIR_PIN, or E3_ENABLE_PIN not defined for this board."
   #endif
-#elif EXTRUDERS > 2
+#elif E_STEPPERS > 2
   #if !PIN_EXISTS(E2_STEP) || !PIN_EXISTS(E2_DIR) || !PIN_EXISTS(E2_ENABLE)
     #error "E2_STEP_PIN, E2_DIR_PIN, or E2_ENABLE_PIN not defined for this board."
   #endif
-#elif EXTRUDERS > 1
+#elif E_STEPPERS > 1
   #if !PIN_EXISTS(E1_STEP) || !PIN_EXISTS(E1_DIR) || !PIN_EXISTS(E1_ENABLE)
     #error "E1_STEP_PIN, E1_DIR_PIN, or E1_ENABLE_PIN not defined for this board."
   #endif
@@ -1031,17 +1096,17 @@ static_assert(1 >= 0
     #error "RGB_LED requires RGB_LED_R_PIN, RGB_LED_G_PIN, and RGB_LED_B_PIN."
   #elif ENABLED(RGBW_LED)
     #error "Please enable only one of RGB_LED and RGBW_LED."
-  #elif ENABLED(BLINKM)
-    #error "RGB_LED and BLINKM are currently incompatible (both use M150)."
   #endif
 #elif ENABLED(RGBW_LED)
   #if !(_RGB_TEST && PIN_EXISTS(RGB_LED_W))
     #error "RGBW_LED requires RGB_LED_R_PIN, RGB_LED_G_PIN, RGB_LED_B_PIN, and RGB_LED_W_PIN."
-  #elif ENABLED(BLINKM)
-    #error "RGBW_LED and BLINKM are currently incompatible (both use M150)."
   #endif
-#elif DISABLED(BLINKM) && ENABLED(PRINTER_EVENT_LEDS)
-  #error "PRINTER_EVENT_LEDS requires BLINKM, RGB_LED, or RGBW_LED."
+#elif ENABLED(NEOPIXEL_LED)
+  #if !(PIN_EXISTS(NEOPIXEL) && NEOPIXEL_PIXELS > 0)
+    #error "NEOPIXEL_LED requires NEOPIXEL_PIN and NEOPIXEL_PIXELS."
+  #endif
+#elif ENABLED(PRINTER_EVENT_LEDS) && DISABLED(BLINKM) && DISABLED(PCA9632) && DISABLED(NEOPIXEL_LED)
+  #error "PRINTER_EVENT_LEDS requires BLINKM, PCA9632, RGB_LED, RGBW_LED or NEOPIXEL_LED."
 #endif
 
 /**
@@ -1066,6 +1131,7 @@ static_assert(1 >= 0
  * Note: BQ_LCD_SMART_CONTROLLER => REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
  *       REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER => REPRAP_DISCOUNT_SMART_CONTROLLER
  *       SAV_3DGLCD => U8GLIB_SH1106 => ULTIMAKERCONTROLLER
+ *       MKS_12864OLED => U8GLIB_SH1106 => ULTIMAKERCONTROLLER
  *       miniVIKI => ULTIMAKERCONTROLLER
  *       VIKI2 => ULTIMAKERCONTROLLER
  *       ELB_FULL_GRAPHIC_CONTROLLER => ULTIMAKERCONTROLLER
@@ -1073,14 +1139,32 @@ static_assert(1 >= 0
  */
 static_assert(1 >= 0
   #if ENABLED(ULTIMAKERCONTROLLER) \
-      && DISABLED(SAV_3DGLCD) && DISABLED(miniVIKI) && DISABLED(VIKI2) \
-      && DISABLED(ELB_FULL_GRAPHIC_CONTROLLER) && DISABLED(PANEL_ONE)
+      && DISABLED(SAV_3DGLCD) \
+      && DISABLED(miniVIKI) \
+      && DISABLED(VIKI2) \
+      && DISABLED(ELB_FULL_GRAPHIC_CONTROLLER) \
+      && DISABLED(PANEL_ONE) \
+      && DISABLED(MKS_12864OLED)
     + 1
   #endif
-  #if ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER) && DISABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER)
+  #if ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER) \
+      && DISABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) \
+      && DISABLED(LCD_FOR_MELZI) \
+      && DISABLED(MAKEBOARD_MINI_2_LINE_DISPLAY_1602) \
+      && DISABLED(MKS_12864OLED)
     + 1
   #endif
-  #if ENABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) && DISABLED(BQ_LCD_SMART_CONTROLLER)
+  #if ENABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) \
+      && DISABLED(BQ_LCD_SMART_CONTROLLER)
+    + 1
+  #endif
+  #if ENABLED(LCD_FOR_MELZI)
+    + 1
+  #endif
+  #if ENABLED(MKS_12864OLED)
+    + 1
+  #endif
+  #if ENABLED(MAKEBOARD_MINI_2_LINE_DISPLAY_1602)
     + 1
   #endif
   #if ENABLED(CARTESIO_UI)
@@ -1107,10 +1191,15 @@ static_assert(1 >= 0
   #if ENABLED(G3D_PANEL)
     + 1
   #endif
-  #if ENABLED(MINIPANEL)
+  #if ENABLED(MINIPANEL) && DISABLED(MKS_MINI_12864)
     + 1
   #endif
-  #if ENABLED(REPRAPWORLD_KEYPAD) && DISABLED(CARTESIO_UI)
+  #if ENABLED(MKS_MINI_12864)
+    + 1
+  #endif
+  #if ENABLED(REPRAPWORLD_KEYPAD) \
+      && DISABLED(CARTESIO_UI) \
+      && DISABLED(ANET_KEYPAD_LCD)
     + 1
   #endif
   #if ENABLED(RIGIDBOT_PANEL)
@@ -1146,25 +1235,80 @@ static_assert(1 >= 0
   #if ENABLED(OLED_PANEL_TINYBOY2)
     + 1
   #endif
+  #if ENABLED(ANET_KEYPAD_LCD)
+    + 1
+  #endif
   , "Please select no more than one LCD controller option."
 );
 
-#if ENABLED(HAVE_TMC2130) && !( \
-       ENABLED(  X_IS_TMC2130 ) \
-    || ENABLED( X2_IS_TMC2130 ) \
-    || ENABLED(  Y_IS_TMC2130 ) \
-    || ENABLED( Y2_IS_TMC2130 ) \
-    || ENABLED(  Z_IS_TMC2130 ) \
-    || ENABLED( Z2_IS_TMC2130 ) \
-    || ENABLED( E0_IS_TMC2130 ) \
-    || ENABLED( E1_IS_TMC2130 ) \
-    || ENABLED( E2_IS_TMC2130 ) \
-    || ENABLED( E3_IS_TMC2130 ) )
-  #error "Choose at least one TMC2130 stepper."
+/**
+ * Make sure HAVE_TMCDRIVER is warranted
+ */
+#if ENABLED(HAVE_TMCDRIVER) && !( \
+         ENABLED(  X_IS_TMC ) \
+      || ENABLED( X2_IS_TMC ) \
+      || ENABLED(  Y_IS_TMC ) \
+      || ENABLED( Y2_IS_TMC ) \
+      || ENABLED(  Z_IS_TMC ) \
+      || ENABLED( Z2_IS_TMC ) \
+      || ENABLED( E0_IS_TMC ) \
+      || ENABLED( E1_IS_TMC ) \
+      || ENABLED( E2_IS_TMC ) \
+      || ENABLED( E3_IS_TMC ) \
+      || ENABLED( E4_IS_TMC ) \
+  )
+  #error "HAVE_TMCDRIVER requires at least one TMC stepper to be set."
 #endif
 
-#if ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
-  #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
+/**
+ * Make sure HAVE_TMC2130 is warranted
+ */
+#if ENABLED(HAVE_TMC2130)
+  #if !( ENABLED(  X_IS_TMC2130 ) \
+      || ENABLED( X2_IS_TMC2130 ) \
+      || ENABLED(  Y_IS_TMC2130 ) \
+      || ENABLED( Y2_IS_TMC2130 ) \
+      || ENABLED(  Z_IS_TMC2130 ) \
+      || ENABLED( Z2_IS_TMC2130 ) \
+      || ENABLED( E0_IS_TMC2130 ) \
+      || ENABLED( E1_IS_TMC2130 ) \
+      || ENABLED( E2_IS_TMC2130 ) \
+      || ENABLED( E3_IS_TMC2130 ) \
+      || ENABLED( E4_IS_TMC2130 ) \
+  )
+    #error "HAVE_TMC2130 requires at least one TMC2130 stepper to be set."
+  #elif ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
+    #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
+  #endif
+#endif
+
+/**
+ * Make sure HAVE_L6470DRIVER is warranted
+ */
+#if ENABLED(HAVE_L6470DRIVER) && !( \
+         ENABLED(  X_IS_L6470 ) \
+      || ENABLED( X2_IS_L6470 ) \
+      || ENABLED(  Y_IS_L6470 ) \
+      || ENABLED( Y2_IS_L6470 ) \
+      || ENABLED(  Z_IS_L6470 ) \
+      || ENABLED( Z2_IS_L6470 ) \
+      || ENABLED( E0_IS_L6470 ) \
+      || ENABLED( E1_IS_L6470 ) \
+      || ENABLED( E2_IS_L6470 ) \
+      || ENABLED( E3_IS_L6470 ) \
+      || ENABLED( E4_IS_L6470 ) \
+  )
+  #error "HAVE_L6470DRIVER requires at least one L6470 stepper to be set."
+#endif
+
+/**
+ * Digipot requirement
+ */
+#if ENABLED(DIGIPOT_MCP4018)
+  #if !defined(DIGIPOTS_I2C_SDA_X) || !defined(DIGIPOTS_I2C_SDA_Y) || !defined(DIGIPOTS_I2C_SDA_Z) \
+    || !defined(DIGIPOTS_I2C_SDA_E0) || !defined(DIGIPOTS_I2C_SDA_E1)
+      #error "DIGIPOT_MCP4018 requires DIGIPOTS_I2C_SDA_* pins to be defined."
+  #endif
 #endif
 
 /**

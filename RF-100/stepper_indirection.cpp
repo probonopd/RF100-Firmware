@@ -171,7 +171,7 @@
   // Use internal reference voltage for current calculations. This is the default.
   // Following values from Trinamic's spreadsheet with values for a NEMA17 (42BYGHW609)
   // https://www.trinamic.com/products/integrated-circuits/details/tmc2130/
-  void tmc2130_init(TMC2130Stepper &st, const uint16_t microsteps, const uint32_t thrs, const uint32_t spmm) {
+  void tmc2130_init(TMC2130Stepper &st, const uint16_t microsteps, const uint32_t thrs, const float &spmm) {
     st.begin();
     st.setCurrent(st.getCurrent(), R_SENSE, HOLD_MULTIPLIER);
     st.microsteps(microsteps);
@@ -199,7 +199,7 @@
   #define _TMC2130_INIT(ST, SPMM) tmc2130_init(stepper##ST, ST##_MICROSTEPS, ST##_HYBRID_THRESHOLD, SPMM)
 
   void tmc2130_init() {
-    constexpr uint16_t steps_per_mm[] = DEFAULT_AXIS_STEPS_PER_UNIT;
+    constexpr float steps_per_mm[] = DEFAULT_AXIS_STEPS_PER_UNIT;
     #if ENABLED(X_IS_TMC2130)
       _TMC2130_INIT( X, steps_per_mm[X_AXIS]);
       #if ENABLED(SENSORLESS_HOMING)
@@ -296,7 +296,7 @@
     stepper##A.setMicroSteps(A##_MICROSTEPS); \
     stepper##A.setOverCurrent(A##_OVERCURRENT); \
     stepper##A.setStallCurrent(A##_STALLCURRENT); \
-  } while(0)
+  }while(0)
 
   void L6470_init() {
     #if ENABLED(X_IS_L6470)
