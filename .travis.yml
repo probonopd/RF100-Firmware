@@ -14,6 +14,7 @@ before_install:
   - find arduino-*/ -name platform.local.txt -delete
 
 script:
+  - yes | cp -rf RF-100/example_configurations/Renkforce/RF100/* RF-100/
   - arduino-*/arduino --pref build.path=. --verify --verbose-build --board arduino:avr:mega:cpu=atmega2560 $(readlink -f RF-100/RF-100.ino)
   - ls .
   - zip -r rf100_fw_$(git rev-parse --short HEAD).zip *.ino.hex *.elf *.pdf
