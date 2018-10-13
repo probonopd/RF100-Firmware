@@ -4,6 +4,8 @@ Community-based Marlin firmware configured for the Conrad Electronic Renkforce R
 
 ![renkforce_rf100-conrad](https://user-images.githubusercontent.com/2480569/28237985-64cd60a8-694a-11e7-9f32-d54dc7c0fc24.jpg)
 
+The printer seems similar to the [WEISTEK](http://www.weistek.net/) Mini-Abox 3D Printer (WT560A) by Shenzhen Weistek CO., LTD.
+
 ## What is this?
 
 This is a recent version of Marlin 1.1.6 configured by the community for the RF100. The printer originally comes with an outdated version of Marlin. This one is much more recent, and contains the following optimizations:
