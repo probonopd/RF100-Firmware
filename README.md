@@ -4,6 +4,8 @@ Community-based Marlin firmware configured for the Conrad Electronic Renkforce R
 
 ![renkforce_rf100-conrad](https://user-images.githubusercontent.com/2480569/28237985-64cd60a8-694a-11e7-9f32-d54dc7c0fc24.jpg)
 
+Conformity statement states: [CEI Conrad Electronic International (HK) Limited](https://www.cei-hk.com/), 18th Floor, Tower 2, Nina Tower, No. 8 Yeung Uk Road, Tsuen Wan, New Territories, Hong Kong
+
 The printer seems similar to the [WEISTEK](http://www.weistek.net/) Mini-Abox 3D Printer (WT560A) by Shenzhen Weistek CO., LTD.
 
 ## What is this?
